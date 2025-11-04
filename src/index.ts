@@ -21,17 +21,17 @@ export default {
 
                 if (Const_tokenQueryRequest !== Const_tokenEnv) {
                     console.log('Invalid token:', Const_tokenQueryRequest)
-                    return new Response('invalid token', { status: 401 })
+                    return new Response('invalid token', { status: 451 })
                 }
 
                 if (!Const_urlQueryRequest) {
                     console.log('Missing url parameter')
-                    return new Response('missing url parameter', { status: 451 })
+                    return new Response('missing url parameter', { status: 452 })
                 }
 
                 if (Const_methodRequest?.toUpperCase() !== 'GET' && Const_methodRequest?.toUpperCase() !== 'POST') {
                     console.log('Invalid method:', Const_methodRequest)
-                    return new Response('Method Not Allowed', { status: 452 })
+                    return new Response('Method Not Allowed', { status: 453 })
                 }
                 // Autenticação /\
 
@@ -52,7 +52,7 @@ export default {
 
                 if (!Const_resultD1?.results?.[0]) {
                     console.log('Failed to retrieve proxy count from database')
-                    return new Response('Internal Server Error', { status: 453 })
+                    return new Response('Internal Server Error', { status: 454 })
                 }
 
                 Let_proxyNumber = Const_resultD1.results[0].proxy_count_increment
