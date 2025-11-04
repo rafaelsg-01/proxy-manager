@@ -4,7 +4,7 @@ A simple proxy manager built with Cloudflare Workers that rotates requests throu
 
 ## Features
 
-- Rotates through 25 different proxy endpoints
+- Rotates through different proxy endpoints
 - Supports GET and POST methods
 - Maintains basic headers (Authorization and Content-Type)
 - Token-based authentication
@@ -14,7 +14,7 @@ A simple proxy manager built with Cloudflare Workers that rotates requests throu
 
 1. Each request to `/proxy-manager` is authenticated using a token
 2. The system rotates through different proxy endpoints based on the request's origin
-3. The request is forwarded to one of the 25 proxy endpoints (hosted on Google Cloud Functions)
+3. The request is forwarded to one of the proxy endpoints (hosted on Google Cloud Functions)
 4. Each proxy endpoint is deployed in a different region using code from [proxy-single repository](https://github.com/rafaelsg-01/proxy-single)
 
 ## Setup
@@ -25,7 +25,7 @@ A simple proxy manager built with Cloudflare Workers that rotates requests throu
 
 ## Usage
 
-```http
+```
 GET/POST /proxy-manager?token=YOUR_TOKEN&url=TARGET_URL
 ```
 
