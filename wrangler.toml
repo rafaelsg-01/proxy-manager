@@ -1,0 +1,23 @@
+name = "proxy-manager"
+main = "src/index.ts"
+compatibility_date = "2025-10-11"
+
+[observability]
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+invocation_logs = true
+persist = true
+
+
+# D1 Production
+[[env.production.d1_databases]]
+binding = "D1_proxyManagerAll"
+database_name = "d1_proxy_manager-production"
+database_id = "03395a96-8b6d-4911-945b-78f878a6118c"
+
+# D1 Local
+[[env.local.d1_databases]]
+binding = "D1_proxyManagerAll"
+database_name = "d1_proxy_manager-local"
+database_id = "03395a96-8b6d-4911-945b-78f878a61180"

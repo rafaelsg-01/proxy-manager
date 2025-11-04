@@ -1,0 +1,28 @@
+
+export const Const_listProxy: Record<number, string> = {
+    1: 'http://proxy1.com?url=',
+    2: 'http://proxy2.com?url=',
+    3: 'http://proxy3.com?url=',
+    4: 'http://proxy4.com?url=',
+    5: 'http://proxy5.com?url=',
+    6: 'http://proxy6.com?url=',
+    7: 'http://proxy7.com?url=',
+    8: 'http://proxy8.com?url=',
+    9: 'http://proxy9.com?url=',
+    10: 'http://proxy10.com?url=',
+    11: 'http://proxy11.com?url=',
+    12: 'http://proxy12.com?url=',
+    13: 'http://proxy13.com?url=',
+    14: 'http://proxy14.com?url=',
+    15: 'http://proxy15.com?url=',
+    16: 'http://proxy16.com?url=',
+    17: 'http://proxy17.com?url=',
+    18: 'http://proxy18.com?url=',
+    19: 'http://proxy19.com?url=',
+    20: 'http://proxy20.com?url=',
+    21: 'http://proxy21.com?url=',
+    22: 'http://proxy22.com?url=',
+    23: 'http://proxy23.com?url=',
+    24: 'http://proxy24.com?url=',
+    25: 'http://proxy25.com?url='
+}

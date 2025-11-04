@@ -1,0 +1,26 @@
+{
+  "name": "proxy-manager",
+  "version": "1.0.0",
+  "description": "Gerenciador de proxy - Cloudflare Worker",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev --env=local",
+    "deploy": "wrangler deploy",
+    "start": "wrangler dev"
+  },
+  "keywords": [
+    "cloudflare",
+    "worker",
+    "proxy"
+  ],
+  "author": "Rafael",
+  "license": "MIT",
+  "devDependencies": {
+    "esbuild": "^0.19.12",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "@cloudflare/workers-types": "^4.20251014.0",
+    "wrangler": "^4.45.0"
+  }
+}
