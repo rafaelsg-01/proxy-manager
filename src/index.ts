@@ -109,8 +109,7 @@ export default {
                 Let_urlFetch = (Const_listProxy[Let_proxyNumber] || Const_listProxy[Number(Object.keys(Const_listProxy)[0])]) + encodeURIComponent(Let_urlFetch) + '&token=' + Const_tokenEnv
                 // Modifica URL /\
 
-                const Const_responseFetch = await fetch(Let_urlFetch, Let_requestInitFetch)
-                return Const_responseFetch
+                return (await fetch(Let_urlFetch, Let_requestInitFetch))
                 // Realiza request /\
             }
 
