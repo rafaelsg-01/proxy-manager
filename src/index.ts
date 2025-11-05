@@ -64,7 +64,7 @@ export default {
                 const Const_headersContentTypeRequest = Parameter_request.headers.get('Content-Type') || Parameter_request.headers.get('content-type')
 
                 let Let_urlFetch: string = ''
-                let Let_requestInitFetch: RequestInit = {}
+                let Let_requestInitFetch: RequestInit = { headers: {} }
 
                 if (Const_urlQueryRequest) {
                     Let_urlFetch = Const_urlQueryRequest
@@ -78,17 +78,29 @@ export default {
                     Let_requestInitFetch.body = Const_bodyRequest
                 }
 
-                if (Const_headersAuthorizationRequest) {
-                    Let_requestInitFetch.headers = {
-                        'Authorization': Const_headersAuthorizationRequest,
-                        ...Let_requestInitFetch.headers
-                    }
-                }
+                const Const_allowedHeaders = [
+                    'Accept',
+                    'Accept-Language',
+                    'Authorization',
+                    'Cache-Control',
+                    'Content-Type',
+                    'Pragma',
+                    'Sec-CH-UA',
+                    'Sec-CH-UA-Mobile',
+                    'Sec-CH-UA-Platform',
+                    'Sec-Fetch-Dest',
+                    'Sec-Fetch-Mode',
+                    'Sec-Fetch-Site',
+                    'Sec-Fetch-User',
+                    'Upgrade-Insecure-Requests',
+                    'User-Agent',
+                    'Referer',
+                    'Referrer-Policy'
+                ]
 
-                if (Const_headersContentTypeRequest) {
-                    Let_requestInitFetch.headers = {
-                        'Content-Type': Const_headersContentTypeRequest,
-                        ...Let_requestInitFetch.headers
+                for (let Let_single of Const_allowedHeaders) {
+                    if (Parameter_request.headers.get(Let_single) || Parameter_request.headers.get(Let_single)) {
+                        (Let_requestInitFetch.headers as Record<string, string>)[Let_single] = (Parameter_request.headers.get(Let_single) || Parameter_request.headers.get(Let_single)) as string
                     }
                 }
 
