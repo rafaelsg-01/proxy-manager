@@ -21,12 +21,12 @@ export default {
 
                 if (Const_tokenQueryRequest !== Const_tokenEnv) {
                     console.log('Invalid token:', Const_tokenQueryRequest)
-                    return new Response('invalid token', { status: 451 })
+                    return new Response('Invalid token', { status: 451 })
                 }
 
                 if (!Const_urlQueryRequest) {
                     console.log('Missing url parameter')
-                    return new Response('missing url parameter', { status: 452 })
+                    return new Response('Missing url parameter', { status: 452 })
                 }
 
                 if (Const_methodRequest?.toUpperCase() !== 'GET' && Const_methodRequest?.toUpperCase() !== 'POST') {
