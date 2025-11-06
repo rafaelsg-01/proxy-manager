@@ -1,9 +1,7 @@
 
-import { Const_listProxy } from "./list-proxy-single"
-
 
 export default {
-    async fetch(Parameter_request: Request, Parameter_env: { D1_proxyManagerAll: D1Database, EnvSecret_tokenProxySelf: string }, Parameter_context: ExecutionContext): Promise<Response> {
+    async fetch(Parameter_request: Request, Parameter_env: { D1_proxyManagerAll: D1Database, EnvSecret_tokenProxySelf: string, EnvSecret_listProxy: string }, Parameter_context: ExecutionContext): Promise<Response> {
         const Const_newUrl = new URL(Parameter_request.url)
         const Const_pathname = Const_newUrl.pathname.endsWith('/') && Const_newUrl.pathname.length > 1 ? Const_newUrl.pathname.slice(0, -1) : Const_newUrl.pathname;
 
@@ -11,6 +9,8 @@ export default {
 
         if (Const_pathname === '/proxy-manager') {
             try {
+                const Const_listProxy: string[] = Parameter_env.EnvSecret_listProxy?.replace(/\s+/g, '')?.split(',')
+
                 // Autenticação \/
                 const Const_tokenEnv = Parameter_env.EnvSecret_tokenProxySelf
 
@@ -44,7 +44,7 @@ export default {
                     VALUES (?1, 1)
                     ON CONFLICT(origin_increment) DO UPDATE SET
                         proxy_count_increment = CASE
-                            WHEN excluded.proxy_count_increment + increment.proxy_count_increment > ${Object.keys(Const_listProxy).length} THEN 1
+                            WHEN excluded.proxy_count_increment + increment.proxy_count_increment > ${Const_listProxy.length} THEN 1
                             ELSE excluded.proxy_count_increment + increment.proxy_count_increment
                         END
                     RETURNING proxy_count_increment;
@@ -60,9 +60,6 @@ export default {
 
 
                 // Realiza request \/
-                const Const_headersAuthorizationRequest = Parameter_request.headers.get('Authorization') || Parameter_request.headers.get('authorization')
-                const Const_headersContentTypeRequest = Parameter_request.headers.get('Content-Type') || Parameter_request.headers.get('content-type')
-
                 let Let_urlFetch: string = ''
                 let Let_requestInitFetch: RequestInit = { headers: {} }
 
@@ -79,12 +76,9 @@ export default {
                 }
 
                 const Const_allowedHeaders = [
-                    'Accept',
                     'Accept-Language',
                     'Authorization',
-                    'Cache-Control',
                     'Content-Type',
-                    'Pragma',
                     'Sec-CH-UA',
                     'Sec-CH-UA-Mobile',
                     'Sec-CH-UA-Platform',
@@ -92,10 +86,7 @@ export default {
                     'Sec-Fetch-Mode',
                     'Sec-Fetch-Site',
                     'Sec-Fetch-User',
-                    'Upgrade-Insecure-Requests',
-                    'User-Agent',
                     'Referer',
-                    'Referrer-Policy'
                 ]
 
                 for (let Let_single of Const_allowedHeaders) {
@@ -105,8 +96,7 @@ export default {
                 }
 
                 // Modifica URL \/
-                // Const_listProxy[Let_proxyNumber] -> http://proxy1.com?url=
-                Let_urlFetch = (Const_listProxy[Let_proxyNumber] || Const_listProxy[Number(Object.keys(Const_listProxy)[0])]) + encodeURIComponent(Let_urlFetch) + '&token=' + Const_tokenEnv
+                Let_urlFetch = (Const_listProxy[Let_proxyNumber - 1] || Const_listProxy[0]) + '/?url=' + encodeURIComponent(Let_urlFetch) + '&token=' + Const_tokenEnv
                 // Modifica URL /\
 
                 return (await fetch(Let_urlFetch, Let_requestInitFetch))
