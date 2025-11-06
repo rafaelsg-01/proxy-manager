@@ -16,8 +16,8 @@ This project acts as a proxy manager that distributes requests across multiple p
 
 3. Create a D1 database and bind it to your worker:
    ```bash
-   wrangler d1 create proxy-manager-db
-   wrangler d1 execute proxy-manager-db --file ./create_d1/initial_setup.sql
+   wrangler d1 create d1_proxy_manager-production
+   wrangler d1 execute d1_proxy_manager-production --file ./create_d1/initial_setup.sql
    ```
 
 4. Configure the following Secret Environment Variables in your Cloudflare Workers dashboard:
