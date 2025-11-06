@@ -9,9 +9,9 @@ export default {
 
         if (Const_pathname === '/proxy-manager') {
             try {
-                // Lista de proxies \/
+                // Lista de links proxy-single \/
                 const Const_listProxy: string[] = Parameter_env.EnvSecret_listProxy?.replace(/\s+/g, '')?.split(',')
-                // Lista de proxies /\
+                // Lista de links proxy-single /\
 
 
                 // Autenticação \/
@@ -40,18 +40,18 @@ export default {
 
 
                 // Seleciona proxy \/
-                const Const_urlQueryRequestOrigin = new URL(Const_urlQueryRequest).origin
+                const Const_urlQueryRequestHost = new URL(Const_urlQueryRequest).host
 
                 const Const_resultD1 = await Parameter_env.D1_proxyManagerAll.prepare(`
-                    INSERT INTO increment (origin_increment, proxy_count_increment)
+                    INSERT INTO increment (host_increment, proxy_count_increment)
                     VALUES (?1, 1)
-                    ON CONFLICT(origin_increment) DO UPDATE SET
+                    ON CONFLICT(host_increment) DO UPDATE SET
                         proxy_count_increment = CASE
                             WHEN excluded.proxy_count_increment + increment.proxy_count_increment > ${Const_listProxy.length} THEN 1
                             ELSE excluded.proxy_count_increment + increment.proxy_count_increment
                         END
                     RETURNING proxy_count_increment;
-                `).bind(Const_urlQueryRequestOrigin).all<{ proxy_count_increment: number; }>()
+                `).bind(Const_urlQueryRequestHost).all<{ proxy_count_increment: number; }>()
 
                 if (!Const_resultD1?.results?.[0]) {
                     console.log('Failed to retrieve proxy count from database')
@@ -99,7 +99,7 @@ export default {
                 }
 
                 // Modifica URL \/
-                Let_urlFetch = (Const_listProxy[Let_proxyNumber - 1] || Const_listProxy[0]) + '/?url=' + encodeURIComponent(Let_urlFetch) + '&token=' + Const_tokenEnv
+                Let_urlFetch = (Const_listProxy[Let_proxyNumber - 1] || Const_listProxy[0]) + '/?token=' + Const_tokenEnv + '&url=' + encodeURIComponent(Let_urlFetch)
                 // Modifica URL /\
 
                 return (await fetch(Let_urlFetch, Let_requestInitFetch))

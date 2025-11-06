@@ -8,8 +8,8 @@ create table increment
 (
     increment_id                                      integer primary key autoincrement,
 
-    origin_increment                                  text unique,
+    host_increment                                    text unique,
     proxy_count_increment                             number
 );
 
-CREATE INDEX index_origin_increment ON increment(origin_increment);
+CREATE INDEX index_host_increment ON increment(host_increment);
