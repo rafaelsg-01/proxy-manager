@@ -9,7 +9,10 @@ export default {
 
         if (Const_pathname === '/proxy-manager') {
             try {
+                // Lista de proxies \/
                 const Const_listProxy: string[] = Parameter_env.EnvSecret_listProxy?.replace(/\s+/g, '')?.split(',')
+                // Lista de proxies /\
+
 
                 // Autenticação \/
                 const Const_tokenEnv = Parameter_env.EnvSecret_tokenProxySelf
