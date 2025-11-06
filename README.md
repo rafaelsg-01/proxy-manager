@@ -1,49 +1,47 @@
-# Proxy Manager (Beta)
+# Proxy Manager
 
-A simple proxy manager built with Cloudflare Workers that rotates requests through multiple Google Cloud Functions deployed in different regions, providing different IP addresses for each request.
+A Cloudflare Workers project that manages and rotates multiple proxy endpoints for GET and POST requests.
 
-## Features
+## Overview
 
-- Rotates through different proxy endpoints
-- Supports GET and POST methods
-- Maintains basic headers (Authorization and Content-Type)
-- Token-based authentication
-- Request origin tracking to ensure proper rotation
+This project acts as a proxy manager that distributes requests across multiple proxy endpoints (implemented using [proxy-single](https://github.com/rafaelsg-01/proxy-single)) to rotate IPs for each request.
 
-## How it Works
+## Setup Instructions
 
-1. Each request to `/proxy-manager` is authenticated using a token
-2. The system rotates through different proxy endpoints based on the request's origin
-3. The request is forwarded to one of the proxy endpoints (hosted on Google Cloud Functions)
-4. Each proxy endpoint is deployed in a different region using code from [proxy-single repository](https://github.com/rafaelsg-01/proxy-single)
+1. Clone this repository
+2. Deploy to Cloudflare Workers:
+   ```bash
+   wrangler deploy
+   ```
 
-## Setup
+3. Create a D1 database and bind it to your worker:
+   ```bash
+   wrangler d1 create proxy-manager-db
+   wrangler d1 execute proxy-manager-db --file ./create_d1/initial_setup.sql
+   ```
 
-1. Deploy the proxy-single code to Google Cloud Functions in different regions
-2. Update the proxy list in `src/list-proxy-single.ts` with your function URLs
-3. Deploy this proxy manager to Cloudflare Workers
+4. Configure the following Secret Environment Variables in your Cloudflare Workers dashboard:
+   - `EnvSecret_tokenProxySelf`: A random string that will serve as your authentication token
+   - `EnvSecret_listProxy`: A comma-separated list of your proxy URLs (e.g., "proxy-01.com,proxy-02.com,proxy-03.com")
 
 ## Usage
 
+Send requests to your worker URL with the following parameters:
+
 ```
-GET/POST /proxy-manager?token=YOUR_TOKEN&url=TARGET_URL
+https://your-worker.workers.dev/proxy-manager?token=YOUR_TOKEN&url=TARGET_URL
 ```
 
-### Parameters
+Parameters:
+- `token`: Your authentication token (must match EnvSecret_tokenProxySelf)
+- `url`: The target URL you want to request through the proxy
 
-- `token`: Authentication token
-- `url`: Target URL to proxy the request to
-
-### Supported Methods
+Supported methods:
 - GET
 - POST
 
-### Supported Headers
-- Authorization
-- Content-Type
+The system will automatically rotate through your proxy list for each request, distributing the load and providing different IPs.
 
-## Limitations
+## Related Projects
 
-- Currently in beta
-- Limited header support
-- Only supports GET and POST methods
+For setting up the individual proxy endpoints, please refer to [proxy-single](https://github.com/rafaelsg-01/proxy-single). Each proxy-single instance can be deployed to different AWS regions, allowing for up to 33 different IP addresses for rotation.
