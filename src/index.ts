@@ -245,7 +245,14 @@ export default {
                     Let_urlFetch = Const_urlProxy + '/?token=' + Const_tokenEnv + '&url=' + encodeURIComponent(Let_urlFetch)
                     // Modifica URL /\
 
-                    return (await fetch(Let_urlFetch, Let_requestInitFetch))
+                    const response = await fetch(Let_urlFetch, Let_requestInitFetch);
+                    return new Response(response.body, {
+                        status: response.status,
+                        headers: {
+                            ...Object.fromEntries(response.headers),
+                            'X-Proxy-Used': Const_urlProxy
+                        }
+                    });
                 }
 
                 else if (Const_urlProxy.startsWith('arn')) {
