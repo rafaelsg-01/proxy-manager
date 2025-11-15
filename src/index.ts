@@ -160,6 +160,7 @@ export default {
 
                 const Const_tokenQueryRequest = Const_newUrl.searchParams.get('token')
                 const Const_urlQueryRequest = Const_newUrl.searchParams.get('url')
+                const Const_simpleQueryRequest = Const_newUrl.searchParams.get('simple')
                 const Const_methodRequest = Parameter_request.method
                 const Const_bodyRequest = Parameter_request.body
 
@@ -244,7 +245,7 @@ export default {
                 const Const_urlProxy = Const_listProxy[Let_proxyNumber - 1] || Const_listProxy[0]
                 if (Const_urlProxy.startsWith('http')) {
                     // Modifica URL \/
-                    Let_urlFetch = Const_urlProxy + '/?token=' + Const_tokenEnv + '&url=' + encodeURIComponent(Let_urlFetch)
+                    Let_urlFetch = Const_urlProxy + '/?token=' + Const_tokenEnv + '&url=' + encodeURIComponent(Let_urlFetch) + (Const_simpleQueryRequest ? '&simple=' + Const_simpleQueryRequest : '')
                     // Modifica URL /\
 
                     const response = await fetch(Let_urlFetch, Let_requestInitFetch);
