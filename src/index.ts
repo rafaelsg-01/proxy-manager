@@ -231,6 +231,8 @@ export default {
                     'Sec-Fetch-Site',
                     'Sec-Fetch-User',
                     'Referer',
+                    'H31ffadrg3bb7',
+                    'X-Requested-With',
                 ]
 
                 for (let Let_single of Const_allowedHeaders) {
