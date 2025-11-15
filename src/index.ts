@@ -100,53 +100,29 @@ export default {
 
         let Let_proxyNumber: number = 0
 
-        /* if (Const_pathname === '/test') {
-            // Detalhes da sua função Lambda
-            const functionName = 'proxy-single-27';
-            const awsRegion = 'eu-south-2'; // Região da sua Lambda
-
-            // O payload (dados) que você quer enviar para a sua Lambda
-            const payload = {
-                key1: 'value1',
-                key2: 'value2',
-            };
-
-            // O endpoint para invocação direta da AWS Lambda
-            const url = new URL(`https://lambda.${awsRegion}.amazonaws.com/2015-03-31/functions/${functionName}/invocations`);
-
-            // Crie a instância do signer com as credenciais dos Secrets
-            const signer = new AwsV4Signer({
-                url: url.toString(),
-                accessKeyId: Parameter_env.EnvSecret_awsAccessKeyId,
-                secretAccessKey: Parameter_env.EnvSecret_awsSecretAccessKey,
-                region: awsRegion,
-                service: 'lambda',
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(payload),
-            });
-
-            // Crie a requisição que será assinada
-            const signedRequest = await signer.sign();
-
+        if (Const_pathname === '/test') {
             try {
-                // Envie a requisição assinada para a AWS
-                const response = await fetch(signedRequest.url, {
-                    method: signedRequest.method,
-                    headers: signedRequest.headers,
-                    body: signedRequest.body,
+                var a = await fetch("https://redecanais.lc/watch.php?vid=6f8631438", {
+                    "headers": {
+                        "h31ffadrg3bb7": "h31ffadrg3fj345a",
+                        "x-requested-with": "RC-Site-Requests"
+                    },
+                    "method": "GET"
                 });
 
-                return response
+                var text = await a.text();
+
+                // json
+                return new Response(a.status + text, { status: 200,
+                    headers: { 'Content-Type': 'application/json' }
+                });
             }
 
             catch (error) {
                 console.log('Error invoking Lambda:', error);
                 return new Response(`Fetch error: ${error}`, { status: 500 });
             }
-        } */
+        }
 
         if (Const_pathname === '/proxy-manager') {
             try {
