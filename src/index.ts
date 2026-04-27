@@ -152,6 +152,8 @@ export default {
             try {
                 // Lista de links proxy-single \/
                 const Const_listProxy: string[] = Parameter_env.EnvSecret_listProxy?.replace(/\s+/g, '')?.split(',')
+                console.log('Parameter_env.EnvSecret_listProxy', Parameter_env.EnvSecret_listProxy)
+                console.log('Const_listProxy', Const_listProxy)
                 // Lista de links proxy-single /\
 
 
@@ -243,6 +245,7 @@ export default {
                 }
 
                 const Const_urlProxy = Const_listProxy[Let_proxyNumber - 1] || Const_listProxy[0]
+                console.log('Const_urlProxy', Const_urlProxy)
                 if (Const_urlProxy.startsWith('http')) {
                     // Modifica URL \/
                     Let_urlFetch = Const_urlProxy + '/?token=' + Const_tokenEnv + '&url=' + encodeURIComponent(Let_urlFetch) + (Const_simpleQueryRequest ? '&simple=' + Const_simpleQueryRequest : '')
