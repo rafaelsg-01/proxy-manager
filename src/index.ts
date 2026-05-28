@@ -9,6 +9,43 @@ function Function_extractDataUrlProxy(arn: string): { functionName: string; regi
     };
 }
 
+async function Function_isCloudflareError(response: Response): Promise<boolean> {
+    if (response.status !== 403) return false;
+    const body = await response.text();
+    return body.includes('Attention Required! | Cloudflare');
+}
+
+async function Function_fetchWithRetry(url: string, requestInit: RequestInit, maxRetries: number = 3): Promise<Response> {
+    let lastResponse: Response | null = null;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            const response = await fetch(url, requestInit);
+            lastResponse = response;
+            
+            const isCloudflareError = await Function_isCloudflareError(response);
+            if (!isCloudflareError) {
+                return response;
+            }
+            
+            console.log(`Cloudflare error on attempt ${attempt}/${maxRetries}, retrying...`);
+            
+            // Aguarda um pouco antes de tentar novamente
+            if (attempt < maxRetries) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+        }
+
+        catch (error) {
+            console.log(`Error on attempt ${attempt}/${maxRetries}:`, error);
+            if (attempt === maxRetries) throw error;
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+    }
+    
+    return lastResponse || new Response('Max retries exceeded', { status: 503 });
+}
+
 async function Function_fetchFunctionAws(
     functionName: string,
     region: string,
@@ -94,7 +131,7 @@ async function Function_fetchFunctionAws(
 }
 
 export default {
-    async fetch(Parameter_request: Request, Parameter_env: { D1_proxyManagerAll: D1Database, EnvSecret_tokenProxySelf: string, EnvSecret_listProxy: string, EnvSecret_awsAccessKeyId: string, EnvSecret_awsSecretAccessKey: string }, Parameter_context: ExecutionContext): Promise<Response> {
+    async fetch(Parameter_request: Request, Parameter_env: { D1_proxyManagerAll: D1Database, EnvSecret_tokenProxySelf: string, EnvSecret_listProxy: string, EnvSecret_awsAccessKeyId: string, EnvSecret_awsSecretAccessKey: string, EnvSecret_cloudRunProxyUrl: string }, Parameter_context: ExecutionContext): Promise<Response> {
         const Const_newUrl = new URL(Parameter_request.url)
         const Const_pathname = Const_newUrl.pathname.endsWith('/') && Const_newUrl.pathname.length > 1 ? Const_newUrl.pathname.slice(0, -1) : Const_newUrl.pathname;
 
@@ -248,7 +285,37 @@ export default {
                     Let_urlFetch = Const_urlProxy + '/?token=' + Const_tokenEnv + '&url=' + encodeURIComponent(Let_urlFetch) + (Const_simpleQueryRequest ? '&simple=' + Const_simpleQueryRequest : '')
                     // Modifica URL /\
 
-                    const response = await fetch(Let_urlFetch, Let_requestInitFetch);
+                    // Tenta com o proxy original 3 vezes
+                    let response = await Function_fetchWithRetry(Let_urlFetch, Let_requestInitFetch, 3);
+                    let isCloudflareError = await Function_isCloudflareError(response);
+
+                    // Se continuar com erro de Cloudflare, tenta com o proxy substituto
+                    if (isCloudflareError) {
+                        console.log('Original proxy failed with Cloudflare error, trying Cloud Run proxy...');
+                        try {
+                            const Const_cloudRunProxyUrl = Parameter_env.EnvSecret_cloudRunProxyUrl;
+                            if (Const_cloudRunProxyUrl) {
+                                // Reconstrói a URL para o Cloud Run proxy usando a URL original
+                                const Let_cloudRunUrl = Const_cloudRunProxyUrl + '/?token=' + Const_tokenEnv + '&url=' + encodeURIComponent(Const_urlQueryRequest) + (Const_simpleQueryRequest ? '&simple=' + Const_simpleQueryRequest : '');
+                                
+                                // Tenta com o proxy substituto 3 vezes
+                                response = await Function_fetchWithRetry(Let_cloudRunUrl, Let_requestInitFetch, 3);
+                                
+                                return new Response(response.body, {
+                                    status: response.status,
+                                    headers: {
+                                        ...Object.fromEntries(response.headers),
+                                        'X-Proxy-Used': Const_cloudRunProxyUrl
+                                    }
+                                });
+                            }
+                        }
+
+                        catch (error) {
+                            console.error('Error calling Cloud Run proxy:', error);
+                        }
+                    }
+
                     return new Response(response.body, {
                         status: response.status,
                         headers: {
