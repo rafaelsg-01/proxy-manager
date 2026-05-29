@@ -97,7 +97,9 @@ async function Function_requestWithRetry(
     Const_listProxy: string[],
     Const_tokenEnv: string,
     Let_urlFetch: string,
-    Let_requestInitFetch: RequestInit,
+    Let_method: string,
+    Let_headers: Record<string, string>,
+    Let_body: string,
     Const_simpleQueryRequest: string | null,
     Parameter_env: any,
     Let_proxyNumber: number
@@ -115,7 +117,13 @@ async function Function_requestWithRetry(
             const Let_modifiedUrl = Const_currentProxy + '/?token=' + Const_tokenEnv + '&url=' + encodeURIComponent(Let_urlFetch) + (Const_simpleQueryRequest ? '&simple=' + Const_simpleQueryRequest : '');
             
             try {
-                Let_lastResponse = await fetch(Let_modifiedUrl, Let_requestInitFetch);
+                const Let_newRequestInit: RequestInit = {
+                    method: Let_method,
+                    headers: Let_headers,
+                    body: Let_body || undefined
+                };
+
+                Let_lastResponse = await fetch(Let_modifiedUrl, Let_newRequestInit);
                 Let_proxyTrail.push(Const_currentProxy);
                 Let_attemptCount++;
 
@@ -144,7 +152,13 @@ async function Function_requestWithRetry(
             const Let_modifiedUrl = Const_urlProxyCloudRun + '/?token=' + Const_tokenEnv + '&url=' + encodeURIComponent(Let_urlFetch) + (Const_simpleQueryRequest ? '&simple=' + Const_simpleQueryRequest : '');
             
             try {
-                Let_lastResponse = await fetch(Let_modifiedUrl, Let_requestInitFetch);
+                const Let_newRequestInit: RequestInit = {
+                    method: Let_method,
+                    headers: Let_headers,
+                    body: Let_body || undefined
+                };
+
+                Let_lastResponse = await fetch(Let_modifiedUrl, Let_newRequestInit);
                 Let_proxyTrail.push(Const_urlProxyCloudRun);
                 Let_attemptCount++;
 
@@ -239,18 +253,21 @@ export default {
 
                 // Realiza request \/
                 let Let_urlFetch: string = ''
-                let Let_requestInitFetch: RequestInit = { headers: {} }
+                let Let_method: string = 'GET'
+                let Let_headers: Record<string, string> = {}
+                let Let_bodyString: string = '';
 
                 if (Const_urlQueryRequest) {
                     Let_urlFetch = Const_urlQueryRequest
                 }
 
                 if (Const_methodRequest) {
-                    Let_requestInitFetch.method = Const_methodRequest
+                    Let_method = Const_methodRequest
                 }
 
                 if (Const_bodyRequest) {
-                    Let_requestInitFetch.body = Const_bodyRequest
+                    // Converter body para string para reutilizar em múltiplas requisições
+                    Let_bodyString = await Parameter_request.text();
                 }
 
                 const Const_allowedHeaders = [
@@ -271,7 +288,7 @@ export default {
 
                 for (let Let_single of Const_allowedHeaders) {
                     if (Parameter_request.headers.get(Let_single) || Parameter_request.headers.get(Let_single)) {
-                        (Let_requestInitFetch.headers as Record<string, string>)[Let_single] = (Parameter_request.headers.get(Let_single) || Parameter_request.headers.get(Let_single)) as string
+                        Let_headers[Let_single] = (Parameter_request.headers.get(Let_single) || Parameter_request.headers.get(Let_single)) as string
                     }
                 }
 
@@ -281,7 +298,9 @@ export default {
                         Const_listProxy,
                         Const_tokenEnv,
                         Let_urlFetch,
-                        Let_requestInitFetch,
+                        Let_method,
+                        Let_headers,
+                        Let_bodyString,
                         Const_simpleQueryRequest,
                         Parameter_env,
                         Let_proxyNumber
@@ -304,7 +323,7 @@ export default {
                         const Const_functionNameUrlProxy = Const_extractDataUrlProxy.functionName
                         const Const_regionUrlProxy = Const_extractDataUrlProxy.region
 
-                        const Const_fetchFunctionAws = await Function_fetchFunctionAws(Const_functionNameUrlProxy, Const_regionUrlProxy, Const_tokenEnv, Let_urlFetch, Let_requestInitFetch, Parameter_env.EnvSecret_awsAccessKeyId, Parameter_env.EnvSecret_awsSecretAccessKey)
+                        const Const_fetchFunctionAws = await Function_fetchFunctionAws(Const_functionNameUrlProxy, Const_regionUrlProxy, Const_tokenEnv, Let_urlFetch, { method: Let_method, headers: Let_headers, body: Let_bodyString }, Parameter_env.EnvSecret_awsAccessKeyId, Parameter_env.EnvSecret_awsSecretAccessKey)
                         return Const_fetchFunctionAws
                     }
 
