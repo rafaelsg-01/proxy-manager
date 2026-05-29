@@ -9,43 +9,6 @@ function Function_extractDataUrlProxy(arn: string): { functionName: string; regi
     };
 }
 
-async function Function_isCloudflareError(response: Response): Promise<boolean> {
-    if (response.status !== 403) return false;
-    const body = await response.text();
-    return body.includes('Attention Required! | Cloudflare');
-}
-
-async function Function_fetchWithRetry(url: string, requestInit: RequestInit, maxRetries: number = 3): Promise<Response> {
-    let lastResponse: Response | null = null;
-    
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        try {
-            const response = await fetch(url, requestInit);
-            lastResponse = response;
-            
-            const isCloudflareError = await Function_isCloudflareError(response);
-            if (!isCloudflareError) {
-                return response;
-            }
-            
-            console.log(`Cloudflare error on attempt ${attempt}/${maxRetries}, retrying...`);
-            
-            // Aguarda um pouco antes de tentar novamente
-            if (attempt < maxRetries) {
-                await new Promise(resolve => setTimeout(resolve, 1000));
-            }
-        }
-
-        catch (error) {
-            console.log(`Error on attempt ${attempt}/${maxRetries}:`, error);
-            if (attempt === maxRetries) throw error;
-            await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-    }
-    
-    return lastResponse || new Response('Max retries exceeded', { status: 503 });
-}
-
 async function Function_fetchFunctionAws(
     functionName: string,
     region: string,
@@ -130,60 +93,93 @@ async function Function_fetchFunctionAws(
     }
 }
 
+async function Function_requestWithRetry(
+    Const_listProxy: string[],
+    Const_tokenEnv: string,
+    Let_urlFetch: string,
+    Let_requestInitFetch: RequestInit,
+    Const_simpleQueryRequest: string | null,
+    Parameter_env: any,
+    Let_proxyNumber: number
+): Promise<{ response: Response; Let_proxyTrail: string; Let_attemptCount: number }> {
+    let Let_proxyTrail: string[] = [];
+    let Let_lastResponse: Response | null = null;
+    let Let_attemptCount = 0;
+
+    // Tenta 3 vezes com proxies AWS normais
+    for (let Let_attempt = 0; Let_attempt < 3; Let_attempt++) {
+        const Const_currentProxyIndex = (Let_proxyNumber - 1 + Let_attempt) % Const_listProxy.length;
+        const Const_currentProxy = Const_listProxy[Const_currentProxyIndex];
+
+        if (Const_currentProxy.startsWith('http')) {
+            const Let_modifiedUrl = Const_currentProxy + '/?token=' + Const_tokenEnv + '&url=' + encodeURIComponent(Let_urlFetch) + (Const_simpleQueryRequest ? '&simple=' + Const_simpleQueryRequest : '');
+            
+            try {
+                Let_lastResponse = await fetch(Let_modifiedUrl, Let_requestInitFetch);
+                Let_proxyTrail.push(Const_currentProxy);
+                Let_attemptCount++;
+
+                if (Let_lastResponse.status !== 403) {
+                    return {
+                        response: Let_lastResponse,
+                        Let_proxyTrail: Let_proxyTrail.join(' | '),
+                        Let_attemptCount: Let_attemptCount
+                    };
+                }
+
+                console.log(`Cloudflare 403 error on attempt ${Let_attemptCount}, retrying...`);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            } catch (error) {
+                console.error(`Error on proxy attempt ${Let_attemptCount}:`, error);
+                Let_proxyTrail.push(Const_currentProxy);
+                Let_attemptCount++;
+            }
+        }
+    }
+
+    // Se todos os proxies AWS retornaram 403, tenta com Cloud Run
+    const Const_urlProxyCloudRun = Parameter_env.EnvSecret_urlProxyCloudRun;
+    if (Const_urlProxyCloudRun) {
+        for (let Let_attempt = 0; Let_attempt < 3; Let_attempt++) {
+            const Let_modifiedUrl = Const_urlProxyCloudRun + '/?token=' + Const_tokenEnv + '&url=' + encodeURIComponent(Let_urlFetch) + (Const_simpleQueryRequest ? '&simple=' + Const_simpleQueryRequest : '');
+            
+            try {
+                Let_lastResponse = await fetch(Let_modifiedUrl, Let_requestInitFetch);
+                Let_proxyTrail.push(Const_urlProxyCloudRun);
+                Let_attemptCount++;
+
+                if (Let_lastResponse.status !== 403) {
+                    return {
+                        response: Let_lastResponse,
+                        Let_proxyTrail: Let_proxyTrail.join(' | '),
+                        Let_attemptCount: Let_attemptCount
+                    };
+                }
+
+                console.log(`Cloudflare 403 error on Cloud Run attempt ${Let_attemptCount}, retrying...`);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            } catch (error) {
+                console.error(`Error on Cloud Run attempt ${Let_attemptCount}:`, error);
+                Let_proxyTrail.push(Const_urlProxyCloudRun);
+                Let_attemptCount++;
+            }
+        }
+    }
+
+    // Se todas as 6 tentativas retornarem 403, retorna o último resultado
+    return {
+        response: Let_lastResponse || new Response('No proxy available', { status: 502 }),
+        Let_proxyTrail: Let_proxyTrail.join(' | '),
+        Let_attemptCount: Let_attemptCount
+    };
+}
+
 export default {
-    async fetch(Parameter_request: Request, Parameter_env: { D1_proxyManagerAll: D1Database, EnvSecret_tokenProxySelf: string, EnvSecret_listProxy: string, EnvSecret_awsAccessKeyId: string, EnvSecret_awsSecretAccessKey: string, EnvSecret_cloudRunProxyUrl: string }, Parameter_context: ExecutionContext): Promise<Response> {
+    async fetch(Parameter_request: Request, Parameter_env: { D1_proxyManagerAll: D1Database, EnvSecret_tokenProxySelf: string, EnvSecret_listProxy: string, EnvSecret_awsAccessKeyId: string, EnvSecret_awsSecretAccessKey: string, EnvSecret_urlProxyCloudRun: string }, Parameter_context: ExecutionContext): Promise<Response> {
         const Const_newUrl = new URL(Parameter_request.url)
         const Const_pathname = Const_newUrl.pathname.endsWith('/') && Const_newUrl.pathname.length > 1 ? Const_newUrl.pathname.slice(0, -1) : Const_newUrl.pathname;
 
         let Let_proxyNumber: number = 0
-
-        /* if (Const_pathname === '/test') {
-            // Detalhes da sua função Lambda
-            const functionName = 'proxy-single-27';
-            const awsRegion = 'eu-south-2'; // Região da sua Lambda
-
-            // O payload (dados) que você quer enviar para a sua Lambda
-            const payload = {
-                key1: 'value1',
-                key2: 'value2',
-            };
-
-            // O endpoint para invocação direta da AWS Lambda
-            const url = new URL(`https://lambda.${awsRegion}.amazonaws.com/2015-03-31/functions/${functionName}/invocations`);
-
-            // Crie a instância do signer com as credenciais dos Secrets
-            const signer = new AwsV4Signer({
-                url: url.toString(),
-                accessKeyId: Parameter_env.EnvSecret_awsAccessKeyId,
-                secretAccessKey: Parameter_env.EnvSecret_awsSecretAccessKey,
-                region: awsRegion,
-                service: 'lambda',
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(payload),
-            });
-
-            // Crie a requisição que será assinada
-            const signedRequest = await signer.sign();
-
-            try {
-                // Envie a requisição assinada para a AWS
-                const response = await fetch(signedRequest.url, {
-                    method: signedRequest.method,
-                    headers: signedRequest.headers,
-                    body: signedRequest.body,
-                });
-
-                return response
-            }
-
-            catch (error) {
-                console.log('Error invoking Lambda:', error);
-                return new Response(`Fetch error: ${error}`, { status: 500 });
-            }
-        } */
 
         if (Const_pathname === '/proxy-manager') {
             try {
@@ -281,46 +277,23 @@ export default {
 
                 const Const_urlProxy = Const_listProxy[Let_proxyNumber - 1] || Const_listProxy[0]
                 if (Const_urlProxy.startsWith('http')) {
-                    // Modifica URL \/
-                    Let_urlFetch = Const_urlProxy + '/?token=' + Const_tokenEnv + '&url=' + encodeURIComponent(Let_urlFetch) + (Const_simpleQueryRequest ? '&simple=' + Const_simpleQueryRequest : '')
-                    // Modifica URL /\
+                    const Const_retryResult = await Function_requestWithRetry(
+                        Const_listProxy,
+                        Const_tokenEnv,
+                        Let_urlFetch,
+                        Let_requestInitFetch,
+                        Const_simpleQueryRequest,
+                        Parameter_env,
+                        Let_proxyNumber
+                    );
 
-                    // Tenta com o proxy original 3 vezes
-                    let response = await Function_fetchWithRetry(Let_urlFetch, Let_requestInitFetch, 3);
-                    let isCloudflareError = await Function_isCloudflareError(response);
+                    const Let_proxyHeader = Const_retryResult.Let_proxyTrail + ' | ' + Const_retryResult.Let_attemptCount;
 
-                    // Se continuar com erro de Cloudflare, tenta com o proxy substituto
-                    if (isCloudflareError) {
-                        console.log('Original proxy failed with Cloudflare error, trying Cloud Run proxy...');
-                        try {
-                            const Const_cloudRunProxyUrl = Parameter_env.EnvSecret_cloudRunProxyUrl;
-                            if (Const_cloudRunProxyUrl) {
-                                // Reconstrói a URL para o Cloud Run proxy usando a URL original
-                                const Let_cloudRunUrl = Const_cloudRunProxyUrl + '/?token=' + Const_tokenEnv + '&url=' + encodeURIComponent(Const_urlQueryRequest) + (Const_simpleQueryRequest ? '&simple=' + Const_simpleQueryRequest : '');
-                                
-                                // Tenta com o proxy substituto 3 vezes
-                                response = await Function_fetchWithRetry(Let_cloudRunUrl, Let_requestInitFetch, 3);
-                                
-                                return new Response(response.body, {
-                                    status: response.status,
-                                    headers: {
-                                        ...Object.fromEntries(response.headers),
-                                        'X-Proxy-Used': Const_cloudRunProxyUrl
-                                    }
-                                });
-                            }
-                        }
-
-                        catch (error) {
-                            console.error('Error calling Cloud Run proxy:', error);
-                        }
-                    }
-
-                    return new Response(response.body, {
-                        status: response.status,
+                    return new Response(Const_retryResult.response.body, {
+                        status: Const_retryResult.response.status,
                         headers: {
-                            ...Object.fromEntries(response.headers),
-                            'X-Proxy-Used': Const_urlProxy
+                            ...Object.fromEntries(Const_retryResult.response.headers),
+                            'X-Proxy-Used': Let_proxyHeader
                         }
                     });
                 }
